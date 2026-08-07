@@ -1,37 +1,43 @@
 # Speech-to-Text Transcription Demo (Whisper)
 
-A minimal web app: click a button, speak, and see your speech transcribed
-using a locally-run OpenAI Whisper model.
-
-**Note:** since this runs the microphone on the *server* (not the browser),
-run it on your own machine — `python app.py` and open `localhost:5000` —
-so "the server" and "your mic" are the same computer.
+A small web app: click a button, speak into your browser's microphone, and
+see your speech transcribed using OpenAI Whisper — running locally, no
+cloud API calls.
 
 ## Tech stack
-- **SpeechRecognition** — captures audio from the microphone (via PyAudio) and hands it to the recognizer
-- **PyAudio** — low-level microphone access
 - **OpenAI Whisper** — the actual speech-to-text model
 - **PyTorch** — runs the Whisper model
 - **NumPy** — array/audio-buffer handling used internally by Whisper
-- **FFmpeg** — decodes/resamples audio for Whisper (system dependency, not a Python package)
-- **Flask** — tiny web server tying it all together
+- **FFmpeg** — decodes the audio Whisper receives (system dependency)
+- **Flask** — tiny Python web server tying it all together
+- **MediaRecorder API** (browser JS) — captures audio from your microphone
 - Plain **HTML/CSS/JS** — the UI
 
-## 1. Install system dependencies
+## How it works
 
-**FFmpeg**
-- macOS: `brew install ffmpeg`
-- Ubuntu/Debian: `sudo apt update && sudo apt install ffmpeg`
-- Windows: download from https://ffmpeg.org/download.html and add it to your PATH
+1. Click **Start Recording** — your browser asks for microphone permission
+   and starts recording using the `MediaRecorder` API.
+2. Click **Stop Recording** — the clip is uploaded to the Flask backend.
+3. Flask saves it to a temp file and passes it to Whisper
+   (`model.transcribe(...)`), which runs locally via PyTorch.
+4. The transcript comes back as JSON and is displayed on the page.
 
-**PortAudio** (needed for PyAudio to build/install)
-- macOS: `brew install portaudio`
-- Ubuntu/Debian: `sudo apt install portaudio19-dev python3-pyaudio`
-- Windows: usually installs fine via pip directly
+## Getting started (run it on your own machine)
 
-## 2. Install Python dependencies
+### 1. Clone the repo
 
-It's recommended to use a virtual environment:
+```bash
+git clone <your-repo-url>
+cd speech-to-text-app
+```
+
+### 2. Install FFmpeg (system dependency, not a Python package)
+
+- **macOS:** `brew install ffmpeg`
+- **Ubuntu/Debian:** `sudo apt update && sudo apt install ffmpeg`
+- **Windows:** download from https://ffmpeg.org/download.html and add it to your PATH
+
+### 3. Set up a virtual environment and install Python dependencies
 
 ```bash
 python -m venv venv
@@ -40,47 +46,72 @@ source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-If `pyaudio` fails to install on Windows, try:
-```bash
-pip install pipwin
-pipwin install pyaudio
-```
+> First install downloads PyTorch + Whisper, which can take a few minutes
+> depending on your connection.
 
-## 3. Run the app
+### 4. Run the app
 
 ```bash
 python app.py
 ```
 
-Then open **http://localhost:5000** in your browser.
+Open **http://localhost:5000** in your browser. Click **Start Recording**,
+allow microphone access when prompted, speak a sentence, then click
+**Stop Recording** — your transcript will appear a few seconds later.
 
-Click **"Start Recording"**, speak a sentence, and the transcript will
-appear in the text box below. The first request will be slower since
-Whisper downloads and loads the model weights.
+> The very first transcription will be slower than the rest, since Whisper
+> downloads its model weights (~140MB for the default `base` model) the
+> first time it runs, then caches them locally.
 
-## Notes on accuracy vs. speed
+## Tuning accuracy vs. speed
 
-In `app.py`, `WHISPER_MODEL` controls which Whisper model is loaded:
+`WHISPER_MODEL` near the top of `app.py` controls which Whisper model size
+is used (also overridable via a `WHISPER_MODEL` environment variable):
 
-| Model  | Relative speed | Accuracy   |
-|--------|-----------------|------------|
-| tiny   | fastest         | lowest     |
-| base   | fast            | good (default) |
-| small  | moderate        | better     |
-| medium | slow            | very good  |
-| large  | slowest         | best       |
+| Model  | Relative speed | Accuracy   | Rough RAM needed |
+|--------|-----------------|------------|-------------------|
+| tiny   | fastest         | lowest     | ~1GB |
+| base   | fast            | good (default) | ~1GB |
+| small  | moderate        | better     | ~2GB |
+| medium | slow            | very good  | ~5GB |
+| large  | slowest         | best       | ~10GB |
 
-For a live demo on a laptop CPU, `base` or `small` is usually the sweet
-spot. Switch to `small`/`medium` if you have a GPU or need higher accuracy
-and don't mind the extra latency.
+If your machine has decent RAM/CPU (or a GPU), bumping this up to `small`
+or `medium` noticeably improves accuracy on short phrases and names.
 
-## How it works
+Other tunables worth knowing about, set where `model.transcribe(...)` is
+called in `app.py`:
+- `condition_on_previous_text=False` — reduces Whisper carrying earlier
+  mistakes forward into later words
+- `initial_prompt` — gives the model a little context, which helps on
+  short, casual phrases
+- `temperature=0.0` — deterministic decoding instead of sampling
 
-1. Browser sends `POST /record` when you click the button.
-2. Flask opens the microphone via `speech_recognition.Microphone()`
-   (backed by PyAudio), calibrates for ambient noise, then records
-   until you stop talking (or hits the time limit).
-3. The captured audio is passed to `recognizer.recognize_whisper(...)`,
-   which runs OpenAI's Whisper model locally through PyTorch to produce
-   the transcript.
-4. The transcript is returned as JSON and rendered in the page.
+## Notes / known limitations
+
+- This runs Whisper **locally on your CPU** by default — no cloud calls,
+  no API key needed, but transcription speed depends on your hardware.
+- Microphone access requires either `localhost` or HTTPS — this is a
+  browser security requirement (`getUserMedia`), so it works out of the
+  box locally but would need HTTPS if ever deployed publicly.
+- Not currently hosted anywhere public — this is set up for local/dev use.
+  If you'd like to deploy it, the code is already structured for that (see
+  below) — just needs a host like Render or Railway that supports
+  long-running Python processes (Vercel-style serverless won't work here
+  due to PyTorch/Whisper's size and runtime).
+
+<details>
+<summary>Optional: deploying this publicly later</summary>
+
+The repo includes a `render.yaml` for deploying to [Render](https://render.com)
+as a normal web service:
+
+1. Push the repo to GitHub
+2. On Render: **New +** → **Web Service** → select the repo
+3. Render auto-detects `render.yaml` and deploys with `WHISPER_MODEL=base`
+   (kept small to fit free-tier RAM limits)
+4. You'll get a public HTTPS URL once it's live
+
+Free-tier instances spin down when idle and take ~30–60s to wake up on the
+next visit — normal for free hosting.
+</details>
