@@ -1,4 +1,8 @@
 # Speech-to-Text Transcription Demo (Whisper)
+<img width="467" height="373" alt="Screenshot 2026-08-07 104405" src="https://github.com/user-attachments/assets/eb9195ba-37c4-4385-95fa-70a53386c7e9" />
+<img width="487" height="371" alt="Screenshot 2026-08-07 102430" src="https://github.com/user-attachments/assets/32a21781-8d30-466c-a421-49180e40c4cc" />
+
+
 
 A small web app: click a button, speak into your browser's microphone, and
 see your speech transcribed using OpenAI Whisper — running locally, no
