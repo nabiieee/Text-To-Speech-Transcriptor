@@ -23,7 +23,7 @@ recognizer = sr.Recognizer()
 # Whisper model size: tiny / base / small / medium / large
 # Bigger = more accurate but slower and more memory-hungry.
 # "base" is a good balance for a demo running on CPU.
-WHISPER_MODEL = "base"
+WHISPER_MODEL = "small"
 
 
 @app.route("/")

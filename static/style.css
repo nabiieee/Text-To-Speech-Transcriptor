@@ -17,7 +17,7 @@ body {
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   padding: 32px;
-  width: 420px;
+  width:424px;
   max-width: 90vw;
 }
 
@@ -104,4 +104,8 @@ textarea {
   resize: vertical;
   font-size: 14px;
   font-family: inherit;
+}
+
+textarea:focus-visible{
+outline: none;
 }
