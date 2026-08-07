@@ -48,7 +48,8 @@ button {
   color: white;
   cursor: pointer;
   transition: background 0.2s;
-  font-family: Nunito
+  font-family: Nunito;
+  font-weight: 700;
 }
 
 button:hover:not(:disabled) {
