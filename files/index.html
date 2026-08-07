@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Speech-to-Text Demo (Whisper)</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="card">
+    <h1>🎙️ Speech-to-Text Transcription</h1>
+    <p class="subtitle">Powered by OpenAI Whisper + SpeechRecognition + PyTorch</p>
+
+    <button id="recordBtn">Start Recording</button>
+    <p id="status" class="status"></p>
+
+    <label for="transcript">Transcript</label>
+    <textarea id="transcript" rows="8" readonly placeholder="Your transcribed speech will appear here..."></textarea>
+
+    <button id="clearBtn" class="secondary">Clear</button>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

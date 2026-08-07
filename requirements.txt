@@ -1,0 +1,6 @@
+flask
+SpeechRecognition
+openai-whisper
+torch
+numpy
+pyaudio
