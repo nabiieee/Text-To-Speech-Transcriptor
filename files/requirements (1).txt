@@ -1,0 +1,7 @@
+flask
+SpeechRecognition
+openai-whisper
+torch
+numpy
+pyaudio
+faster-whisper
